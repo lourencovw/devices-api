@@ -9,7 +9,7 @@ export default class extends BaseSchema {
       table.string('name').notNullable()
       table.string('brand').notNullable()
       table.enum('state', ['available', 'in-use', 'inactive']).defaultTo('available')
-      table.timestamp('creation_time').notNullable()
+      // I prefer 'created_at' over 'creationTime' for consistency
       table.timestamp('created_at')
       table.timestamp('updated_at')
     })
