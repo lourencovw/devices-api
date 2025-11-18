@@ -1,62 +1,69 @@
+import Device from '#models/device'
 import { test } from '@japa/runner'
-
 
 test.group('Devices', (group) => {
   group.setup(() => {
-    // tests rely on the app http server from configureSuite in bootstrap
+    // run migrations or any setup needed before tests
+
   })
 
   test('create a device', async ({ client, assert }) => {
     const payload = { name: 'Phone X', brand: 'Acme' }
+
     const res = await client.post('/devices').json(payload)
 
     res.assertStatus(201)
-    const body = res.body()
-    assert.equal(body.name, payload.name)
-    assert.equal(body.brand, payload.brand)
-    assert.equal(body.state, 'available')
+    assert.equal(res.body().name, payload.name)
+    assert.equal(res.body().brand, payload.brand)
+    assert.equal(res.body().state, 'available')
   })
 
   test('list devices and filter by brand and state', async ({ client }) => {
-    // create two devices with different brand and state
-    await client.post('/devices').json({ name: 'A', brand: 'BrandA', state: 'available' })
-    await client.post('/devices').json({ name: 'B', brand: 'BrandB', state: 'inactive' })
+    await Device.create({ name: 'A', brand: 'BrandA', state: 'available' })
+    await Device.create({ name: 'B', brand: 'BrandB', state: 'inactive' })
 
     const all = await client.get('/devices')
-    all.assertStatus(200)
-
     const byBrand = await client.get('/devices').qs({ brand: 'BrandA' })
-    byBrand.assertStatus(200)
-
     const byState = await client.get('/devices').qs({ state: 'inactive' })
+
+    all.assertStatus(200)
+    byBrand.assertStatus(200)
     byState.assertStatus(200)
   })
 
-  test('cannot update createdAt and cannot update name/brand when in-use', async ({ client }) => {
-    const create = await client.post('/devices').json({ name: 'X', brand: 'Y' })
-    create.assertStatus(201)
-    const id = create.body().id
+  test('cannot update cannot update name/brand when in-use', async ({ client, assert }) => {
+    const create = await Device.create({ name: 'Device1', brand: 'Brand1' })
+    const id = create.id
 
-    // try update createdAt
-    const upd1 = await client.patch(`/devices/${id}`).json({ createdAt: '2020-01-01' })
-    upd1.assertStatus(400)
+    const updateState = await client.patch(`/devices/${id}`).json({ state: 'in-use' })
+    const updateName = await client.patch(`/devices/${id}`).json({ name: 'NewName' })
+    const updateBrand = await client.patch(`/devices/${id}`).json({ brand: 'NewBrand' })
 
-    // set device to in-use directly
-    await client.patch(`/devices/${id}`).json({ state: 'in-use' })
-
-    // now try to update name
-    const upd2 = await client.patch(`/devices/${id}`).json({ name: 'NewName' })
-    upd2.assertStatus(400)
+    updateState.assertStatus(200)
+    updateName.assertStatus(400)
+    assert.equal(updateName.body().error, 'cannot update name or brand when device is in use')
+    updateBrand.assertStatus(400)
+    assert.equal(updateBrand.body().error, 'cannot update name or brand when device is in use')
   })
+  test('cannot update createdAt field', async ({ client, assert }) => {
+    const { id, createdAt } = await Device.create({ name: 'Device2', brand: 'Brand2' });
 
+    const update = await client
+      .patch(`/devices/${id}`)
+      .json({ name: 'updated', createdAt: '1999-02-02' });
+    const { createdAt: createdAtAfter } = await Device.findOrFail(id);
+
+    update.assertStatus(200);
+    assert.equal(createdAt.toISODate(), createdAtAfter.toISODate());
+  })
   test('cannot delete device in-use', async ({ client }) => {
-    const create = await client.post('/devices').json({ name: 'ToDelete', brand: 'D' })
-    create.assertStatus(201)
-    const id = create.body().id
+    const create = await Device.create({ name: 'Device3', brand: 'Brand3' })
+    const id = create.id
 
     await client.patch(`/devices/${id}`).json({ state: 'in-use' })
 
     const del = await client.delete(`/devices/${id}`)
     del.assertStatus(400)
+    del.assertBody({ error: 'cannot delete a device that is in use' })
   })
 })
