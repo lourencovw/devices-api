@@ -1,13 +1,13 @@
 version: '3.8'
 services:
   app:
-    build: .
-    ports:
-      - "3333:3333"
+    build:
+      context: .
     volumes:
       - ./:/app:cached
+      - node_modules:/app/node_modules
       - ./tmp:/app/tmp
-    command: ["sh", "-c", "node ace migration:run && npm run dev"]
+    command: ["sh", "-c", "dockerize -wait tcp://postgres:5432 && node ace migration:run && npm run dev"]
     depends_on:
       - postgres
     environment:
@@ -15,7 +15,7 @@ services:
       - TZ=UTC
       - PORT=3333
       - HOST=0.0.0.0
-      - LOG_LEVEL=info
+      - LOG_LEVEL=debug
       - APP_KEY=dfhlskdjfsdjkfsdkjf
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -30,3 +30,7 @@ services:
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=root
       - POSTGRES_DB=app
+
+volumes:
+  node_modules:
+    driver: local
