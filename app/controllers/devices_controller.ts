@@ -1,5 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import Device from '#models/device'
+import { createDeviceValidator, updateDeviceValidator } from '#validators/device'
 
 export default class DevicesController {
     /**
@@ -53,8 +54,8 @@ export default class DevicesController {
      * @requestBody <Device>.only(name, brand, state)
      */
 	public async store({ request, response }: HttpContext) {
-		const payload = request.only(['name', 'brand', 'state'])
-
+		const data = request.only(['name', 'brand', 'state'])
+        const payload = await createDeviceValidator.validate(data)
 		if (!payload.name || !payload.brand) {
 			return response.badRequest({ error: 'name and brand are required' })
 		}
@@ -85,11 +86,8 @@ export default class DevicesController {
      */
 	public async update({ params, request, response }: HttpContext) {
 		const device = await Device.findOrFail(params.id)
-		const payload = request.only(['name', 'brand', 'state', 'createdAt'])
-
-        if (payload.createdAt) {
-            return response.badRequest({ error: 'createdAt cannot be updated' })
-        }
+		const data = request.only(['name', 'brand', 'state']);
+        const payload = await updateDeviceValidator.validate(data);
 
 		if (device.state === 'in-use' && (payload.name || payload.brand)) {
 			return response.badRequest({ error: 'cannot update name or brand when device is in use' })
