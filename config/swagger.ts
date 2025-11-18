@@ -1,11 +1,13 @@
 // for AdonisJS v6
 import path from "node:path";
-import url from "node:url";
-// ---
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default {
-  // path: __dirname + "/../", for AdonisJS v5
-  path: path.dirname(url.fileURLToPath(import.meta.url)) + "/../", // for AdonisJS v6
+  path: path.resolve(__dirname, ".."), // for AdonisJS v6
   tagIndex: 1,
   productionEnv: "production", // optional
   info: {
