@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3333:3333"
+    volumes:
+      - ./:/app:cached
+      - ./tmp:/app/tmp
+    command: ["sh", "-c", "node ace migration:run && npm run dev"]
+    depends_on:
+      - postgres
+    environment:
+      - NODE_ENV=development
+      - TZ=UTC
+      - PORT=3333
+      - HOST=0.0.0.0
+      - LOG_LEVEL=info
+      - APP_KEY=dfhlskdjfsdjkfsdkjf
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_DATABASE=app
+  postgres:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=app
