@@ -2,6 +2,16 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Device from '#models/device'
 
 export default class DevicesController {
+    /**
+     * @index
+     * @operationId listDevices
+     * @summary List Devices
+     * @description Retrieve a list of devices, with optional filtering by brand and state.
+     * @responseBody 200 - <Device[]>
+     * @responseBody 400 - { error: string }
+     * @paramQuery brand - Filter devices by brand (partial match) - @type(string)
+     * @paramQuery state - Filter devices by state (exact match) - @type(string)
+     */
 	public async index({ request }: HttpContext) {
 		const { brand, state } = request.qs()
 
@@ -19,11 +29,29 @@ export default class DevicesController {
 		return devices
 	}
 
+    /**
+     * @show
+     * @operationId getDevice
+     * @summary Get Device
+     * @description Retrieve a single device by its ID.
+     * @responseBody 200 - <Device>
+     * @responseBody 404 - { error: string }
+     * @paramPath id - The ID of the device to retrieve - @type(number)
+     */
 	public async show({ params }: HttpContext) {
 		const device = await Device.findOrFail(params.id)
 		return device
 	}
 
+    /**
+     * @store
+     * @operationId createDevice
+     * @summary Create Device
+     * @description Create a new device with the provided name, brand, and optional state.
+     * @responseBody 201 - <Device>
+     * @responseBody 400 - { error: string }
+     * @requestBody <Device>.only(name, brand, state)
+     */
 	public async store({ request, response }: HttpContext) {
 		const payload = request.only(['name', 'brand', 'state'])
 
@@ -44,6 +72,17 @@ export default class DevicesController {
 		return response.created(device)
 	}
 
+    /**
+     * @update
+     * @operationId updateDevice
+     * @summary Update Device
+     * @description Update an existing device's name, brand, or state.
+     * @responseBody 200 - <Device>
+     * @responseBody 400 - { error: string }
+     * @responseBody 404 - { error: string }
+     * @paramPath id - The ID of the device to update - @type(number)
+     * @requestBody <Device>.only(name, brand, state)
+     */
 	public async update({ params, request, response }: HttpContext) {
 		const device = await Device.findOrFail(params.id)
 		const payload = request.only(['name', 'brand', 'state', 'createdAt'])
@@ -69,6 +108,16 @@ export default class DevicesController {
 		return device
 	}
 
+    /**
+     * @destroy
+     * @operationId deleteDevice
+     * @summary Delete Device
+     * @description Delete a device by its ID, only if it is not in use.
+     * @responseBody 204 - No Content
+     * @responseBody 400 - { error: string }
+     * @responseBody 404 - { error: string }
+     * @paramPath id - The ID of the device to delete - @type(number)
+     */
 	public async destroy({ params, response }: HttpContext) {
 		const device = await Device.findOrFail(params.id)
 
